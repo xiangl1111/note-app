@@ -4,6 +4,8 @@ import '../css/Note.css';
 import { useEffect, useState } from "react";
 import { v4 as uuid } from 'uuid';
 
+const BASE_URL = 'http://localhost:8000';
+
 function Notes (){
     //states
     const [notes,setNotes] = useState([]);
@@ -17,30 +19,42 @@ function Notes (){
 
     //add new note to the notes state array
     const saveHandler = () =>{
-        setNotes((prevState)=>[
-            ...prevState,
-            {
-                id:uuid(),
-                text:inputText,
-            }
-        ]);
-
-        setInputText("");
+        fetch(`${BASE_URL}/notes`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: inputText }),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              setNotes((prevState) => [...prevState, data]);
+              setInputText('');
+            });
     }
 
     //delete note
     const deleteHandler = (id) =>{
-        const filterdNotes= notes.filter((note)=> note.id !== id)
-        setNotes(filterdNotes)
+        fetch(`${BASE_URL}/notes/${id}`, {
+            method: 'DELETE',
+          })
+          .then(() => {
+            const filteredNotes = notes.filter((note) => note._id !== id);
+            setNotes(filteredNotes);
+          });
     }
 
     //get 
     useEffect(()=>{
-        const data = JSON.parse(localStorage.getItem('Notes'));
-        if(Array.isArray(data) && data.length > 0){
-            setNotes(data);
+        setLoading(true);
+        fetch(`${BASE_URL}/notes`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setNotes(data);
         }
         setLoading(false);
+      });
     },[])
 
     //saving data to local storage
